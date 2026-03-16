@@ -87,10 +87,15 @@ export class UsersController {
               m.id AS movie_id,
               m.external_id AS movie_external_id,
               m.title AS movie_title,
-              m.release_date
+              m.release_date,
+              m.popularity_score,
+              COALESCE(STRING_AGG(g.name, ', ' ORDER BY g.name), '') AS movie_genres
             FROM interaction_events ie
             JOIN movies m ON m.id = ie.movie_id
+            LEFT JOIN movie_genres mg ON mg.movie_id = m.id
+            LEFT JOIN genres g ON g.id = mg.genre_id
             WHERE ie.user_id = $1
+            GROUP BY ie.id, m.id
             ORDER BY ie.occurred_at DESC
             LIMIT $2 OFFSET $3
           `,
