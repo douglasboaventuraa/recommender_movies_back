@@ -145,6 +145,15 @@ export class UsersController {
           return;
         }
 
+        const genreCheck = await client.query(
+          `SELECT COUNT(*)::int AS total FROM movie_genres WHERE movie_id = $1`,
+          [movie.id]
+        );
+        if (genreCheck.rows[0].total === 0) {
+          res.status(400).json({ error: 'Movie has no genres assigned. Assign at least one genre before adding interactions.' });
+          return;
+        }
+
         const existing = await client.query(
           `SELECT id FROM interaction_events WHERE user_id = $1 AND movie_id = $2 LIMIT 1`,
           [user.id, movie.id]
