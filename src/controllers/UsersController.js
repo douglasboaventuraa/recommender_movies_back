@@ -107,6 +107,84 @@ export class UsersController {
       }
     });
 
+    router.post('/api/users/:id/movies', async (req, res) => {
+      const client = await pool.connect();
+      try {
+        const {
+          movieId,
+          eventType = 'watch_complete',
+          watchedAt = null,
+          source = 'api'
+        } = req.body || {};
+
+        const allowedEvents = new Set(['watch_start', 'watch_complete']);
+        if (!allowedEvents.has(eventType)) {
+          res.status(400).json({ error: 'Invalid eventType', allowed: Array.from(allowedEvents) });
+          return;
+        }
+
+        if (!movieId) {
+          res.status(400).json({ error: 'movieId is required' });
+          return;
+        }
+
+        const user = await findUserByIdOrExternalId(client, req.params.id);
+        if (!user) {
+          res.status(404).json({ error: 'User not found' });
+          return;
+        }
+
+        const movie = await findMovieByIdOrExternalId(client, movieId);
+        if (!movie) {
+          res.status(404).json({ error: 'Movie not found' });
+          return;
+        }
+
+        const eventWeight = eventType === 'watch_complete' ? 1.2 : 0.4;
+
+        const result = await client.query(
+          `INSERT INTO interaction_events (user_id, movie_id, event_type, event_weight, source, occurred_at, metadata)
+           VALUES ($1, $2, $3, $4, $5, COALESCE($6::timestamptz, NOW()), $7::jsonb)
+           RETURNING id, event_type, event_weight, source, occurred_at`,
+          [user.id, movie.id, eventType, eventWeight, source, watchedAt, JSON.stringify({ entrypoint: 'user-movies' })]
+        );
+
+        res.status(201).json({ message: 'Movie added to user', user, movie, interaction: result.rows[0] });
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to add movie to user', details: error.message });
+      } finally {
+        client.release();
+      }
+    });
+
+    router.delete('/api/users/:id/movies/:movieId', async (req, res) => {
+      const client = await pool.connect();
+      try {
+        const user = await findUserByIdOrExternalId(client, req.params.id);
+        if (!user) {
+          res.status(404).json({ error: 'User not found' });
+          return;
+        }
+
+        const movie = await findMovieByIdOrExternalId(client, req.params.movieId);
+        if (!movie) {
+          res.status(404).json({ error: 'Movie not found' });
+          return;
+        }
+
+        const deleted = await client.query(
+          `DELETE FROM interaction_events WHERE user_id = $1 AND movie_id = $2 RETURNING id`,
+          [user.id, movie.id]
+        );
+
+        res.json({ message: 'Movie removed from user interactions', deletedCount: deleted.rowCount });
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to remove movie from user', details: error.message });
+      } finally {
+        client.release();
+      }
+    });
+
     router.post('/api/users/:id/profile-watch', async (req, res) => {
       const client = await pool.connect();
       try {
