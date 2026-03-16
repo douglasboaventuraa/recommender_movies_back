@@ -37,7 +37,10 @@ export class UsersController {
           pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
         });
       } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch users', details: error.message });
+        const details = error instanceof Error
+          ? error.message
+          : JSON.stringify(error);
+        res.status(500).json({ error: 'Failed to fetch users', details: details || 'Unknown database error' });
       }
     });
 

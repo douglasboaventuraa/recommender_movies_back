@@ -9,7 +9,10 @@ export class HealthController {
         await pool.query('SELECT 1');
         res.json({ ok: true });
       } catch (error) {
-        res.status(500).json({ ok: false, error: error.message });
+        const details = error instanceof Error
+          ? error.message
+          : JSON.stringify(error);
+        res.status(500).json({ ok: false, error: details || 'Unknown database error' });
       }
     });
 
