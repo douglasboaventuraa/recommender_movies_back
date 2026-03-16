@@ -140,6 +140,15 @@ export class UsersController {
           return;
         }
 
+        const existing = await client.query(
+          `SELECT id FROM interaction_events WHERE user_id = $1 AND movie_id = $2 LIMIT 1`,
+          [user.id, movie.id]
+        );
+        if (existing.rowCount > 0) {
+          res.status(409).json({ error: 'User already has an interaction with this movie' });
+          return;
+        }
+
         const eventWeight = eventType === 'watch_complete' ? 1.2 : 0.4;
 
         const result = await client.query(
