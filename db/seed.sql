@@ -57,15 +57,21 @@ CROSS JOIN l
 ON CONFLICT (external_id) DO NOTHING;
 
 -- Movies
-WITH l_pt AS (SELECT id FROM languages WHERE code = 'pt-BR'),
-     l_en AS (SELECT id FROM languages WHERE code = 'en-US'),
-     c_br AS (SELECT id FROM countries WHERE iso_code = 'BR'),
-     c_us AS (SELECT id FROM countries WHERE iso_code = 'US')
 INSERT INTO movies (
     external_id, title, original_title, synopsis, release_date, runtime_min,
     primary_language_id, production_country_id, popularity_score
 )
-SELECT * FROM (
+SELECT
+    x.external_id,
+    x.title,
+    x.original_title,
+    x.synopsis,
+    x.release_date,
+    x.runtime_min,
+    lang.id,
+    ctry.id,
+    x.popularity_score
+FROM (
     VALUES
         ('m-001', 'Codigo Infinito', 'Infinite Code', 'Um dev descobre um algoritmo que preve o futuro.', DATE '2021-08-10', 118, 'en-US', 'US', 82.3000),
         ('m-002', 'Noite Neon', 'Neon Night', 'Uma investigacao em uma cidade futurista.', DATE '2022-11-05', 104, 'en-US', 'US', 77.1200),
