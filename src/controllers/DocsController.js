@@ -1,12 +1,27 @@
 import { Router } from 'express';
-import { openApiSpec } from '../docs/openApiSpec.js';
+import { buildOpenApiSpec } from '../docs/openApiSpec.js';
+
+const getServerUrl = (req) => {
+  const explicitUrl = process.env.PUBLIC_API_BASE_URL?.trim();
+  if (explicitUrl) {
+    return explicitUrl.replace(/\/$/, '');
+  }
+
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const protocol = Array.isArray(forwardedProto)
+    ? forwardedProto[0]
+    : (forwardedProto || req.protocol || 'http');
+  const host = req.headers['x-forwarded-host'] || req.get('host');
+
+  return `${protocol}://${host}`;
+};
 
 export class DocsController {
   static router() {
     const router = Router();
 
-    router.get('/openapi.json', (_req, res) => {
-      res.json(openApiSpec);
+    router.get('/openapi.json', (req, res) => {
+      res.json(buildOpenApiSpec(getServerUrl(req)));
     });
 
     router.get('/docs', (_req, res) => {

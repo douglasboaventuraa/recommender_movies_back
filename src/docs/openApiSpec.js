@@ -1,11 +1,10 @@
-export const openApiSpec = {
+const baseOpenApiSpec = {
   openapi: '3.0.3',
   info: {
     title: 'Recommender Movies API',
     version: '2.0.0',
     description: 'API de dados e recomendacao de filmes com arquitetura em src/controllers e src/workers.'
   },
-  servers: [{ url: 'http://localhost:8080' }],
   paths: {
     '/health': { get: { summary: 'Health check', responses: { '200': { description: 'OK' } } } },
     '/api/users': { get: { summary: 'List users', responses: { '200': { description: 'Users list' } } } },
@@ -22,3 +21,8 @@ export const openApiSpec = {
     '/api/train/runs': { get: { summary: 'List training runs', responses: { '200': { description: 'Runs list' } } } }
   }
 };
+
+export const buildOpenApiSpec = (serverUrl) => ({
+  ...baseOpenApiSpec,
+  servers: [{ url: serverUrl }]
+});
